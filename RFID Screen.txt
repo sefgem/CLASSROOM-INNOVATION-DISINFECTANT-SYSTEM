@@ -1,0 +1,198 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+#include <DS3231.h>
+// Set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+int state1 = 0;
+int state2 = 0;
+#define RST_PIN    A0
+#define SDA_PIN    10
+MFRC522 mfrc522(SDA_PIN, RST_PIN);
+DS3231  rtc(SDA, SCL);
+void setup() {
+  lcd.init();
+  // Turn on the blacklight
+  lcd.backlight();
+  Serial.begin(9600);
+  SPI.begin();
+  mfrc522.PCD_Init();
+  rtc.begin();
+  pinMode(6, OUTPUT);
+  pinMode(5, OUTPUT);
+  lcd.setCursor(0, 0);
+  lcd.print("  WELCOME TO  ");
+  lcd.setCursor(0, 1);
+  lcd.print("The IoT Projects");
+  delay(4000);
+  lcd.clear();
+  digitalWrite(6, LOW);
+  digitalWrite(5, LOW);
+}
+ 
+void loop() {
+  RTC();
+  rfid();
+}
+ 
+void RTC()
+{
+  //rtc.setDOW(SATURDAY);			// Set Day-of-Week to SUNDAY
+  //rtc.setTime(08, 50, 0);			// Set the time to 12:00:00 (24hr format)
+  //rtc.setDate(10, 12, 2021);			// Set the date to January 1st, 2014
+ 
+  lcd.setCursor(0, 0);
+  lcd.print("Put Your Card to" );
+  lcd.setCursor(0, 1);
+  lcd.print("the Reader......");
+  lcd.setCursor(0, 2);
+  lcd.print("Time: ");
+  lcd.print(rtc.getTimeStr());
+  lcd.setCursor(0, 3);
+  lcd.print("Date: ");
+  lcd.print(rtc.getDateStr());
+}
+void rfid()
+{
+  // Look for new cards
+  if ( ! mfrc522.PICC_IsNewCardPresent())
+  {
+    return;
+  }
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+  //Show UID on serial monitor
+  String content = "";
+  byte letter;
+  for (byte i = 0; i < mfrc522.uid.size; i++)
+  {
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+
+  content.toUpperCase();
+ 
+if (content.substring(1) == "E7 8C D5 B5" && state1 == 0)	//change here the UID of the card/cards that you want to give access
+  {
+    lcd.clear();
+    lcd.setCursor(7, 0);
+    lcd.print("Jason    ");
+    lcd.setCursor(7, 1);
+    lcd.print("000001");
+    info();
+    SendJason();
+    state1 = 1;
+    digitalWrite(6, HIGH); delay(4000);
+    digitalWrite(6, LOW);
+    digitalWrite(5, LOW);
+  }
+else if (content.substring(1) == "E7 8C D5 B5" && state1 == 1) //change here the UID of the card/cards that you want to give access
+  {
+    lcd.clear();
+    lcd.setCursor(7, 0);
+    lcd.print("Jason    ");
+    lcd.setCursor(7, 1);
+    lcd.print("000001");
+    info();
+    SendJason();
+    state1 = 0;
+    digitalWrite(6, LOW); 
+    digitalWrite(5, HIGH); delay(4000);
+    digitalWrite(5, LOW);
+  }
+else if (content.substring(1) == "B7 F0 77 5A" && state2 == 0) //change here the UID of the card/cards that you want to give access
+  {
+    lcd.clear();
+    lcd.setCursor(7, 0);
+    lcd.print("Sophia    ");
+    lcd.setCursor(7, 1);
+    lcd.print("000002");
+    info();
+    SendSophia();
+    state2 = 1;
+    digitalWrite(6, HIGH); delay(4000);
+    digitalWrite(6, LOW);
+    digitalWrite(5, LOW);
+  }
+else if (content.substring(1) == "B7 F0 77 5A" && state2 == 1) //change here the UID of the card/cards that you want to give access
+  {
+    lcd.clear();
+    lcd.setCursor(7, 0);
+    lcd.print("Sophia    ");
+    lcd.setCursor(7, 1);
+    lcd.print("000002");
+    info();
+    SendSophia();
+    state2 = 0;
+    digitalWrite(6, LOW); 
+    digitalWrite(5, HIGH); delay(4000);
+    digitalWrite(5, LOW);
+  }
+  else   {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("ID : ");
+    lcd.print("Unknown");
+    lcd.setCursor(0, 1);
+    lcd.print("Access denied");
+    Serial.println(" Access denied");
+    delay(1500);
+    lcd.clear();
+  }
+}
+ 
+ 
+void info()
+{
+  lcd.setCursor(0, 0);
+  lcd.print("Name : ");
+  lcd.setCursor(0, 1);
+  lcd.print("ID   : ");
+  delay(1500);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Authorized Access");
+  delay(1000);
+  lcd.clear();
+}
+ 
+void SendJason()
+{
+  lcd.setCursor(0, 0);
+  lcd.print("Please Proceed");
+  delay(1000);
+  if (state1 == 0) {
+    const char Jason[] = "No: 000001 Jason Garcia has joined school at ";
+    Serial.print(Jason);
+  }
+  else if (state1 == 1) {
+    const char Jason[] = "No: 000001 Jason Garcia has gone from school at ";
+    Serial.print(Jason);
+  }
+  Serial.println(rtc.getTimeStr());
+  delay(100);
+  Serial.println((char)26);
+}
+ 
+void SendSophia()
+{
+  lcd.setCursor(0, 0);
+  lcd.print("Please Proceed");
+  delay(1000);
+  if (state2 == 0) {
+    const char Sophia[] = "No: 000002 Sophia Dela Cruz has joined school at ";
+    Serial.print(Sophia);
+  }
+  else if (state2 == 1) {
+    const char Sophia[] = "No: 000002 Sophia Dela Cruz has gone from school at ";
+    Serial.print(Sophia);
+  }
+  Serial.println(rtc.getTimeStr());
+  delay(100);
+  Serial.println((char)26);
+}

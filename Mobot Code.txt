@@ -1,0 +1,151 @@
+/*Even pins output
+              Odd pins input*/
+int Pos12 = 22;			//CW MOTOR1
+int Neg12 = 24;		//CCW MOTOR1
+int Ena12 = 2;			//PWM MOTOR1
+int Pos34 = 28;			//CW MOTOR 2
+int Neg34 = 30;		//CCW MOTOR2
+int Ena34 = 4;			//PWM MOTOR2
+            //Motor Driver (OUTPUT)
+int LEFT;			//LEFT SENSOR IN EQUATE
+int RIGHT;			//RIGHT SENSOR IN EQUATE
+#define leftpin 52		//LEFT SENSOR IN DIGITALREAD 
+#define rightpin 53		//RIGHT SENSOR IN DIGITALREAD 
+            //Sensors (INPUT)
+int manualforward;		//MANUALFORWARD EQUATE
+int manualleft; 			//MANUALLEFT EQUATE 
+int manualright;			//MANUALRIGHT EQUATE
+int manualreverse;		//MANUALREVERSE EQUATE
+#define manualforwardpin 43	//MANUALFORWARD DIGITALREAD
+#define manualleftpin 45	//MANUALLEFT DIGITALREAD
+#define manualrightpin 47	//MANUALRIGHT DIGITALREAD
+#define manualreversepin 49	//MANUALREVERSE DIGITALREAD
+            //Manual Control (INPUT)
+int mode;	//MODE EQUATE (LINEFOLLOWER = HIGH, MANUAL = LOW)
+#define modepin 51		//MODE DIGITALREAD
+            //Mode Control  (INPUT)
+void setup() 
+{
+  Serial.begin(9600);
+  pinMode(Pos12, OUTPUT);			//22 motor1 CW
+  pinMode(Neg12, OUTPUT);			//24 motor1 CCW
+  pinMode(Ena12, OUTPUT);			//2 motor1 PWM
+  pinMode(Pos34, OUTPUT);			//28 motor 2 CW
+  pinMode(Neg34, OUTPUT);			//30 motor 2 CC
+  pinMode(Ena34, OUTPUT);			//4 motor 2 PWM
+  pinMode(leftpin, INPUT);			//50 left sensor
+  pinMode(rightpin, INPUT);			//52 right sensor
+  pinMode(manualforwardpin,INPUT);		//43 from esp
+  pinMode(manualleftpin,INPUT);		//45 from esp
+  pinMode(manualrightpin,INPUT);		//47 from esp
+  pinMode(manualreversepin, INPUT);		//49 from esp
+  pinMode(modepin, INPUT);			//51 from esp modeselector
+}
+ 
+void loop()
+{
+  mode = digitalRead(modepin);                     //mode selection equate
+  if (mode==HIGH) // mode of mobot is automatic    //mode HIGH = LINE FOLLOWER
+  {
+    LEFT = digitalRead(leftpin);			//left sensor equate
+    RIGHT = digitalRead(rightpin);		//right sensor equate
+    if ((LEFT==HIGH)&&(RIGHT==HIGH))	//sensor straight(White-White)
+    {
+      digitalWrite(Pos12,HIGH);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,128);
+      digitalWrite(Pos34,HIGH);
+      digitalWrite(Neg34,LOW);
+      analogWrite(Ena34,128);
+      }
+    else if ((LEFT==LOW)&&(RIGHT==LOW))	//rotate to find line
+    {
+      digitalWrite(Pos12,HIGH);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,64);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,HIGH);
+      analogWrite(Ena34,64);
+      }
+    else if ((LEFT==HIGH)&&(RIGHT==LOW))	//sensor turn right(White-Black)
+    {
+      digitalWrite(Pos12,LOW);
+      digitalWrite(Neg12,HIGH);
+      analogWrite(Ena12,64);
+      digitalWrite(Pos34,HIGH);
+      digitalWrite(Neg34,LOW);
+      analogWrite(Ena34,64);
+      }
+    else if ((LEFT==LOW)&&(RIGHT==HIGH))	//sensor turn left(Black-White)
+    {
+      digitalWrite(Pos12,HIGH);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,64);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,HIGH);
+      analogWrite(Ena34,64);
+      }
+    else                                             
+    {
+      digitalWrite(Pos12,LOW);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,0);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,LOW);
+      analogWrite(Ena34,0);
+      delay(50);
+      }
+  }
+  else if (mode==LOW)				//mode LOW = MANUAL
+  {
+    manualforward = digitalRead(manualforwardpin);	//Equate
+    manualleft = digitalRead(manualleftpin);		//Equate
+    manualright = digitalRead(manualrightpin);		//Equate
+    manualreverse = digitalRead(manualreversepin);	//Equate
+    if (manualforward==HIGH)				//forward
+      {
+      digitalWrite(Pos12,HIGH);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,255);
+      digitalWrite(Pos34,HIGH);
+      digitalWrite(Neg34,LOW);
+      analogWrite(Ena34,255);
+      }
+    else if (manualleft==HIGH)				//turn left
+      {
+      digitalWrite(Pos12,LOW);
+      digitalWrite(Neg12,HIGH);
+      analogWrite(Ena12,128);
+      digitalWrite(Pos34,HIGH);
+      digitalWrite(Neg34,LOW);
+      analogWrite(Ena34,128);
+      }
+    else if (manualright==HIGH)				//turn right
+      {
+      digitalWrite(Pos12,HIGH);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,128);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,HIGH);
+      analogWrite(Ena34,128);
+      }
+    else if (manualreverse==HIGH)			//reverse
+      {
+      digitalWrite(Pos12,LOW);
+      digitalWrite(Neg12,HIGH);
+      analogWrite(Ena12,255);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,HIGH);
+      analogWrite(Ena34,255);
+      }
+    else
+      {
+      digitalWrite(Pos12,LOW);
+      digitalWrite(Neg12,LOW);
+      analogWrite(Ena12,0);
+      digitalWrite(Pos34,LOW);
+      digitalWrite(Neg34,LOW);
+      digitalWrite(Ena34,0);
+      }
+  }
+}
